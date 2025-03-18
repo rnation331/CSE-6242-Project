@@ -1,0 +1,48 @@
+---
+title: "CSE 6242 Project Zoning"
+output: html_document
+date: "2025-03-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(sf)
+library(dplyr)
+library(leaflet)
+zoning_atl_json <- st_read("/Users/ryannation/Downloads/Official_Lots_with_Zoning_.geojson", quiet = TRUE)
+
+zoning_atl_csv <- read.csv("/Users/ryannation/Downloads/Official_Lots_with_Zoning_.csv")
+
+merged_atl <- zoning_atl_json %>%
+  left_join(zoning_atl_csv, by = "OBJECTID_12")
+merged_atl <- merged_atl %>%
+  rename(ZONINGCODE = ZONINGCODE.x)
+merged_atl <- merged_atl %>%
+  select(OBJECTID_12, ZONINGCODE, geometry)
+merged_atl <- st_zm(merged_atl, drop = TRUE, what = "ZM")
+
+zoning_palette <- colorFactor(
+  palette = c("magma"),
+  domain = merged_atl$ZONINGCODE
+)
+
+atl_map <- leaflet(merged_atl) %>%
+  addTiles() %>%
+  addPolygons(
+    fillColor = ~zoning_palette(ZONINGCODE),
+    fillOpacity = 0.7,
+    color = "black",
+    weight = 1,
+    label = ~paste("Zoning Code:", ZONINGCODE)) %>%
+      addLegend(
+        pal = zoning_palette,
+        values = ~ZONINGCODE,
+        title = "Zoning Codes"
+      )
+    
+atl_map
+```
